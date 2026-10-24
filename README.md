@@ -1,6 +1,6 @@
 # Slate
 
-[![Test](https://github.com/zaerl/mojibake/actions/workflows/tests.yml/badge.svg)](https://github.com/zaerl/mojibake/actions/workflows/tests.yml)
+[![Test](https://github.com/zaerl/slate/actions/workflows/tests.yml/badge.svg)](https://github.com/zaerl/slate/actions/workflows/tests.yml)
 
 **A fast, single-header hash map for C, built the way Go builds its maps.**
 
