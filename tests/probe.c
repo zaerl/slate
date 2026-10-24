@@ -30,6 +30,10 @@ ATT_TEST(probe) {
     // leaves a tombstone so probes keep walking past it.
     int full = -1;
 
+    // Initialized before the loop too, so compilers that can't see the loop runs (MSVC C4701)
+    // don't flag the uses after it. A lazy map owns nothing, so re-initializing it is free.
+    slate(&map);
+
     for(int round = 0; round < 1000 && full < 0; ++round) {
         slate(&map);
         slate_reserve(&map, 14);
