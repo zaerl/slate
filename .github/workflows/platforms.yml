@@ -1,0 +1,147 @@
+# The Slate library
+#
+# This file is distributed under the MIT License. See LICENSE for details.
+
+name: Platforms
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-bsd:
+    name: Test (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: FreeBSD 15.1
+            os: freebsd
+            version: '15.1'
+          - label: OpenBSD 7.9
+            os: openbsd
+            version: '7.9'
+          - label: NetBSD 10.1
+            os: netbsd
+            version: '10.1'
+          - label: Haiku R1/beta6
+            os: haiku
+            version: 'r1beta6'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Start ${{ matrix.label }} VM
+        uses: cross-platform-actions/action@e0b9770014ba65d5e0815f15b74031c3a635f641 # v1.6.0
+        with:
+          operating_system: ${{ matrix.os }}
+          version: ${{ matrix.version }}
+          shell: sh
+          sync_files: runner-to-vm
+
+      # The Makefile needs GNU make, which the BSDs ship as gmake. Haiku's make is already GNU make.
+      - name: Install GNU make
+        shell: cpa.sh {0} --sync-files none
+        run: |
+          case "$(uname -s)" in
+            FreeBSD)
+              (command -v sudo >/dev/null 2>&1 && sudo pkg install -y gmake) ||
+                pkg install -y gmake
+              ;;
+            OpenBSD)
+              (command -v doas >/dev/null 2>&1 && doas pkg_add gmake) ||
+                (command -v sudo >/dev/null 2>&1 && sudo pkg_add gmake) ||
+                pkg_add gmake
+              ;;
+            NetBSD)
+              (command -v sudo >/dev/null 2>&1 && sudo pkgin -y install gmake) ||
+                pkgin -y install gmake
+              ;;
+          esac
+
+      # The system compiler is cc/c++ everywhere (clang on FreeBSD and OpenBSD, gcc on NetBSD and
+      # Haiku), so override the Makefile's gcc/g++ defaults.
+      - name: Test C11 and C++17
+        shell: cpa.sh {0} --sync-files none
+        run: |
+          uname -a
+          MAKE=make
+          command -v gmake >/dev/null 2>&1 && MAKE=gmake
+          cc --version
+          $MAKE test test-cpp cli CC=cc CXX=c++ WARNINGS_AS_ERRORS=ON
+
+  macos:
+    name: Test (macOS)
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Test C11 and C++17
+        run: |
+          cc --version
+          make test test-cpp cli CC=cc CXX=c++ WARNINGS_AS_ERRORS=ON
+
+  mingw:
+    name: Test (Windows, MinGW-w64 UCRT64)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            make
+            mingw-w64-ucrt-x86_64-gcc
+
+      - name: Test C11 and C++17
+        run: |
+          gcc --version
+          make test test-cpp cli WARNINGS_AS_ERRORS=ON
+
+  # MSVC exercises the _MSC_VER code paths (intrinsics, Interlocked atomics) that MinGW skips.
+  msvc:
+    name: Test (Windows, MSVC)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+
+      # /wd4100 matches -Wno-unused-parameter; _CRT_SECURE_NO_WARNINGS silences the CRT's
+      # deprecation of standard functions such as snprintf variants.
+      - name: Test C11
+        run: |
+          mkdir bin\c
+          cl /nologo /W4 /WX /wd4100 /D_CRT_SECURE_NO_WARNINGS /std:c11 /Fobin\c\ /Fe:bin\test.exe tests\*.c || exit /b 1
+          bin\test.exe
+
+      - name: Test C++17
+        run: |
+          mkdir bin\cpp
+          cl /nologo /W4 /WX /wd4100 /D_CRT_SECURE_NO_WARNINGS /std:c++17 /EHsc /TP /Fobin\cpp\ /Fe:bin\test-cpp.exe tests\*.c || exit /b 1
+          bin\test-cpp.exe
+
+      - name: Build the CLI
+        run: |
+          mkdir bin\cli
+          cl /nologo /W4 /WX /wd4100 /D_CRT_SECURE_NO_WARNINGS /std:c11 /Fobin\cli\ /Fe:bin\cli-test.exe cli\cli-test.c
