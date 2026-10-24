@@ -1,0 +1,67 @@
+# Build output
+/bin/
+/build/
+/out/
+
+# Objects, dependency files and binaries built outside bin/
+*.o
+*.obj
+*.d
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.pdb
+*.ilk
+*.dSYM/
+
+# WebAssembly builds
+*.wasm
+*.wat
+
+# Profiling, coverage and sanitizer output
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+gmon.out
+coverage/
+*.info
+
+# Debugger and crash artifacts
+core
+core.*
+vgcore.*
+*.stackdump
+
+# Tooling caches (clangd, ccls, compile databases)
+.cache/
+.ccls-cache/
+compile_commands.json
+
+# Editors
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+\#*\#
+.\#*
+
+# Local AI agent settings
+.claude/settings.local.json
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
