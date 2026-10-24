@@ -24,6 +24,12 @@ extern "C" {
 
 #include <stdint.h>
 
+#define SLATE_VERSION_MAJOR 0
+#define SLATE_VERSION_MINOR 1
+#define SLATE_VERSION_REVISION 0
+
+#define SLATE_VERSION "0.1.0"
+
 #ifndef SLATE_API
 #define SLATE_API
 #endif
