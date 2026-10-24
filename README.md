@@ -72,6 +72,15 @@ int main(void) {
     slate_set_i64(&map, -7, (void*)"negative seven");
     slate_set_u64(&map, 7, (void*)"seven");
 
+    // Any byte sequence works as a key, embedded NULs included.
+    const unsigned char id[] = { 0x01, 0x00, 0xFF };
+
+    slate_set_bytes(&map, id, sizeof(id), (void*)"binary");
+
+    if(slate_get_bytes(&map, id, sizeof(id), &value) == SLATE_OK) {
+        printf("id: %s\n", (const char*)value);
+    }
+
     printf("%llu entries\n", (unsigned long long)slate_length(&map));
 
     // Remove by key.
@@ -201,8 +210,7 @@ Slate follows Go's map internals closely. Each choice below matches Go unless no
   its runtime snapshot iteration and per-entry revalidation. Slate forbids modification from the
   `slate_each` callback and skips that machinery.
 
-`make cli` builds an interactive visualizer that draws every table and group as you insert, delete,
-compact and clone, with a live invariant check. It's a good way to watch the design at work.
+To watch all of this happen, see [the test CLI](#the-test-cli).
 
 ## Portability and thread safety
 
@@ -220,6 +228,57 @@ make test         # C11
 make test-cpp     # the same sources and tests, compiled as C++17
 make test-docker  # both, inside an Alpine container
 ```
+
+## The test CLI
+
+[`cli/cli-test.c`](cli/cli-test.c) is an interactive visualizer: every keypress changes the map and
+redraws its internals, so you can watch groups fill up, tables grow and split, and tombstones appear
+and disappear.
+
+```sh
+make cli
+./bin/cli-test
+```
+
+Each key you press inserts a random unsigned 64-bit key. A few keys do more:
+
+| Key | Action |
+| --- | --- |
+| `1`–`9` | Bulk-insert 10^n random keys (capped at a million) |
+| Backspace | Delete a random entry |
+| `p` | Compact the map (`slate_compact`) |
+| `c` | Clear the map but keep its capacity (`slate_clear`) |
+| `k` | Clone the map and check the copy with `slate_equal` |
+| `v` | Look up every stored key and confirm it returns its value |
+| `f` | Toggle between slot markers and fingerprints |
+| `q` or Esc | Quit |
+
+After each key the screen shows:
+
+- **The status line:** what the key did, and the entry count.
+- **The map header:** the seed, the global depth, and a live invariant check. It recomputes every
+  counter from the raw control bytes and prints `OK` or the exact counter that's wrong.
+- **A fill histogram:** how many groups hold 0 to 8 entries, which shows clustering at a glance.
+- **Every table:** its directory range, `used`, `capacity`, `grow_left` and `local_depth`, then one
+  row per group: `.` for empty, `x` for deleted, `#` for occupied. In fingerprint mode, occupied
+  slots show their 7-bit h2 in hex instead. The last inserted key is highlighted in green.
+
+```text
+seed 96dcd6fbe1d00ab8  global_depth 0  invariants: OK
+groups by fill 0..8: 0 0 0 0 3 3 2 3 5
+
+dir 0  (used 100, capacity 128, grow_left 12, local_depth 0)
+group   0  ####....
+group   1  ######..
+group   2  ########
+group   3  #######.
+...
+```
+
+Try `3` (1,000 keys) to see the first table split, then press Backspace a few times. A deleted slot
+only turns into a tombstone (`x`) when its group is full; otherwise it goes straight back to empty.
+Then press `p` to watch compaction rebuild everything. The CLI also accepts piped input, so
+`printf '3pv' | ./bin/cli-test` prints a plain transcript you can script.
 
 ## Credits
 
