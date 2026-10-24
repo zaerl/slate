@@ -4,6 +4,11 @@
 
 CC = gcc
 WARN_FLAGS = -Wall -Wextra -Wno-unused-parameter -Wshadow -Wpointer-arith -Wvla -Wwrite-strings
+
+# `make test WARNINGS_AS_ERRORS=ON` fails the build on any warning (used by CI).
+ifeq ($(WARNINGS_AS_ERRORS),ON)
+WARN_FLAGS += -Werror
+endif
 CFLAGS = $(WARN_FLAGS) -std=c11
 CXX = g++
 CXXFLAGS = $(WARN_FLAGS) -std=c++17
