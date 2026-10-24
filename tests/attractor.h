@@ -149,8 +149,8 @@ unsigned int att_get_total_tests(void);
     (att_set_assert_context(#VALUE, __FILE__, __LINE__), \
      att_assert_true((VALUE) ? 1 : 0, MESSAGE, __FILE__, __LINE__))
 
-// Assert that two memory regions of SIZE bytes are equal. Two NULL pointers are considered equal; a
-// NULL and a non-NULL pointer are not.
+// Assert that two memory regions of SIZE bytes are equal. Two NULL pointers are
+// considered equal; a NULL and a non-NULL pointer are not.
 #define ATT_ASSERT_MEM(VALUE, EXPECTED, SIZE, MESSAGE) \
     (att_set_assert_context(#VALUE, __FILE__, __LINE__), \
      att_assert_mem(VALUE, EXPECTED, SIZE, MESSAGE, __FILE__, __LINE__))
@@ -187,8 +187,8 @@ void att_set_test_callback(att_test_callback callback);
 // Stores the expression for the next assertion. Used internally by ATT_ASSERT.
 void att_set_assert_context(const char *expression, const char *file, unsigned int line);
 
-// Named test cases. ATT_TEST(name) defines a test case function and registers it automatically
-// before main() runs:
+// Named test cases. ATT_TEST(name) defines a test case function and registers it
+// automatically before main() runs:
 //
 // ATT_TEST(parser_empty) {
 //     ATT_ASSERT(parse(""), NULL, "empty input yields NULL");
@@ -576,8 +576,8 @@ static void att_console_init(void) {
         const char *no_color = getenv("NO_COLOR");
 
 #ifdef _WIN32
-        // On Windows, the TERM env is usually not set, so enable colors by default if NO_COLOR is
-        // not set
+        // On Windows, the TERM env is usually not set, so enable colors by default if NO_COLOR
+        // is not set
         att_show_colors = no_color == NULL;
 #else
         // On Unix, check TERM environment variable
@@ -619,8 +619,8 @@ static void att_console_init(void) {
 int att_assert(const char *format, int test, const char *description) {
     unsigned int index = ATT_FETCH_INCREMENT(att_total_tests);
 
-    // Initialize the library on the first assertion. The fetch-increment returns the previous value
-    // atomically, so exactly one thread observes zero here.
+    // Initialize the library on the first assertion. The fetch-increment returns the
+    // previous value atomically, so exactly one thread observes zero here.
     if(index == 0) {
         att_console_init();
     }
