@@ -96,8 +96,6 @@ ATT_TEST(compact) {
     ATT_ASSERT(slate_length(&map), COMPACT_KEYS / 10, "the length stays consistent");
 
     // Deleting everything and compacting returns to the lazy empty state.
-    failed = 0;
-
     for(int i = 0; i < COMPACT_KEYS; i += 10) {
         snprintf(key, sizeof(key), "key-%d", i);
         slate_delete(&map, key);

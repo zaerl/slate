@@ -76,15 +76,17 @@ static void cli_clear_screen(void) {
 #endif
 }
 
-// rand() may yield as few as 15 random bits; chain chunks into 64.
+// Demo key generator: splitmix64 over a time-seeded state gives full 64-bit keys. Not meant to be
+// unpredictable, only to scatter keys across the map.
+static uint64_t cli_random_state = 0;
+
 static uint64_t cli_random(void) {
-    uint64_t value = 0;
+    uint64_t value = (cli_random_state += 0x9E3779B97F4A7C15u);
 
-    for(int i = 0; i < 5; ++i) {
-        value = (value << 15) ^ (uint64_t)(rand() & 0x7FFF);
-    }
+    value = (value ^ (value >> 30)) * 0xBF58476D1CE4E5B9u;
+    value = (value ^ (value >> 27)) * 0x94D049BB133111EBu;
 
-    return value;
+    return value ^ (value >> 31);
 }
 
 // ANSI colors only when stdout is a terminal, so piped output stays plain.
@@ -189,7 +191,7 @@ static void cli_dump(slate_s* map, const unsigned char* last_key, int fingerprin
                             snprintf(mark, sizeof(mark), ctrl == 0x80 ? ".." : "xx");
                         }
                     } else {
-                        mark[0] = occupied ? '#' : (ctrl == 0x80 ? '.' : 'x');
+                        mark[0] = (char)(occupied ? '#' : (ctrl == 0x80 ? '.' : 'x'));
                         mark[1] = '\0';
                     }
 
@@ -275,8 +277,8 @@ static int cli_check_invariants(slate_s* map, char* out, size_t size) {
     }
 
     if(total_used != map->used) {
-        pos += (size_t)snprintf(out + pos, size - pos, " map used %" PRIu64 " != %" PRIu64 ";",
-            map->used, total_used);
+        snprintf(out + pos, size - pos, " map used %" PRIu64 " != %" PRIu64 ";", map->used,
+            total_used);
         ++violations;
     }
 
@@ -370,7 +372,13 @@ static uint64_t cli_verify(slate_s* map, uint64_t* mismatches) {
 // Deletes one uniformly random entry: walks to the r-th occupied slot and removes its key. The key
 // is copied out first because the deletion frees the map's own copy.
 static void cli_delete_random(slate_s* map) {
-    uint64_t r = cli_random() % slate_length(map);
+    uint64_t length = slate_length(map);
+
+    if(length == 0) {
+        return;
+    }
+
+    uint64_t r = cli_random() % length;
 
     for(int d = 0; d < map->dir_length; ++d) {
         if(d > 0 && map->dir[d] == map->dir[d - 1]) {
@@ -414,7 +422,7 @@ int main(void) {
     int pressed = 0;
 
     slate(&map);
-    srand((unsigned)time(NULL));
+    cli_random_state = (uint64_t)time(NULL);
 
     cli_clear_screen();
     printf("Slate CLI test: any key inserts, digits bulk-insert 10^n, backspace deletes,\n"

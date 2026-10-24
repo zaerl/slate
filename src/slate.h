@@ -659,7 +659,7 @@ static int slate_dir_free(slate_table_s** dir, int length) {
         }
     }
 
-    SLATE_FREE(dir);
+    SLATE_FREE((void*)dir);
 
     return SLATE_OK;
 }
@@ -743,11 +743,11 @@ static int slate_dir_grow(slate_s* map) {
     }
 
     for(int i = 0; i < map->dir_length; ++i) {
-        dir[i * 2] = map->dir[i];
-        dir[i * 2 + 1] = map->dir[i];
+        dir[(size_t)i * 2] = map->dir[i];
+        dir[(size_t)i * 2 + 1] = map->dir[i];
     }
 
-    SLATE_FREE(map->dir);
+    SLATE_FREE((void*)map->dir);
 
     map->dir = dir;
     map->dir_length = new_length;
@@ -937,7 +937,8 @@ static uint64_t slate_next_pow2(uint64_t value) {
 // even hash distribution, exactly like Go's make(map, hint): skewed keys can still grow or split a
 // table early. Returns -1 when count is absurd.
 static int slate_size_for(uint64_t count, int* tables, int* groups) {
-    uint64_t t = slate_next_pow2((count + SLATE_TABLE_MAX_ENTRIES - 1) / SLATE_TABLE_MAX_ENTRIES);
+    const uint64_t max_entries = (uint64_t)SLATE_TABLE_MAX_ENTRIES;
+    uint64_t t = slate_next_pow2((count + max_entries - 1) / max_entries);
 
     // Matches the directory depth guard in slate_dir_grow.
     if(t > ((uint64_t)1 << 30)) {
@@ -963,7 +964,7 @@ static void slate_dir_free_shells(slate_table_s** dir, int length) {
         }
     }
 
-    SLATE_FREE(dir);
+    SLATE_FREE((void*)dir);
 }
 
 // Canonical 10-byte integer key: a NUL, one type tag byte, the 8 value bytes, so signed, unsigned

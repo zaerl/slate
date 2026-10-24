@@ -12,7 +12,7 @@
 #define ATT_IMPLEMENTATION
 #include "attractor.h"
 
-int main(int argc, char *const argv[]) {
+int main(void) {
     att_set_verbose(1);
     att_run_tests(NULL);
 

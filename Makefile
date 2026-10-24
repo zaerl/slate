@@ -8,6 +8,10 @@ CFLAGS = $(WARN_FLAGS) -std=c11
 CXX = g++
 CXXFLAGS = $(WARN_FLAGS) -std=c++17
 
+# clang-tidy from PATH, else Homebrew's keg-only LLVM. Override with `make tidy CLANG_TIDY=...`.
+CLANG_TIDY ?= $(firstword $(shell command -v clang-tidy 2>/dev/null) \
+	$(wildcard /opt/homebrew/opt/llvm/bin/clang-tidy /usr/local/opt/llvm/bin/clang-tidy) clang-tidy)
+
 # Test builds add debug info and frame pointers for readable stack traces.
 TEST_FLAGS = -g -O1 -fno-omit-frame-pointer
 
@@ -67,10 +71,15 @@ $(CLI_EXECUTABLE): cli/cli-test.c
 
 cli: $(CLI_EXECUTABLE)
 
+# Static analysis with the checks in .clang-tidy. slate.h is analyzed through the files that
+# define SLATE_IMPLEMENTATION (tests/test.c and the CLI).
+tidy:
+	$(CLANG_TIDY) --quiet $(TEST_SRCS) cli/cli-test.c -- $(CFLAGS)
+
 clean:
 	rm -f $(TEST_OBJS) $(TEST_OBJS_CPP) $(DEPS) \
 		$(TEST_EXECUTABLE) $(TEST_EXECUTABLE_CPP) $(CLI_EXECUTABLE)
 
-.PHONY: all clean test test-cpp test-docker cli
+.PHONY: all clean test test-cpp test-docker cli tidy
 
 -include $(DEPS)
