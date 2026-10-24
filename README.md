@@ -1,5 +1,7 @@
 # Slate
 
+[![Test](https://github.com/zaerl/mojibake/actions/workflows/platforms.yml/badge.svg)](https://github.com/zaerl/mojibake/actions/workflows/platforms.yml)
+
 **A fast, single-header hash map for C, built the way Go builds its maps.**
 
 Slate brings Go's [Swiss-table](https://abseil.io/about/design/swisstables) map, the design behind
