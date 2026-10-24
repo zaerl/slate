@@ -944,13 +944,14 @@ static uint64_t slate_next_pow2(uint64_t value) {
 // table early. Returns -1 when count is absurd.
 static int slate_size_for(uint64_t count, int* tables, int* groups) {
     const uint64_t max_entries = (uint64_t)SLATE_TABLE_MAX_ENTRIES;
-    uint64_t t = slate_next_pow2((count + max_entries - 1) / max_entries);
 
-    // Matches the directory depth guard in slate_dir_grow.
-    if(t > ((uint64_t)1 << 30)) {
+    // More than 2^30 full tables, matching the directory depth guard in slate_dir_grow. Checked
+    // before any arithmetic, so counts near UINT64_MAX cannot wrap around into a small size.
+    if(count > ((uint64_t)1 << 30) * max_entries) {
         return SLATE_ERROR_INVALID;
     }
 
+    uint64_t t = slate_next_pow2((count + max_entries - 1) / max_entries);
     uint64_t per_table = (count + t - 1) / t;
 
     *tables = (int)t;

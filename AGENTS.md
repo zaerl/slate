@@ -13,6 +13,7 @@ are a contract, so keep them in sync with any behavior change.
 | `src/slate-generic.h` | Optional `SLATE_SET/GET/DELETE` dispatch (`_Generic` in C, templates in C++) |
 | `tests/*.c` | One test file per feature, built into a single runner |
 | `tests/test.c` | Test `main`; the only test file that defines `SLATE_IMPLEMENTATION` and `ATT_IMPLEMENTATION` |
+| `tests/helpers.c` | Counting allocator, failure injection, invariant checker (no tests of its own) |
 | `tests/attractor.h` | Vendored test framework ([attractor](https://github.com/zaerl/attractor)); do not edit |
 | `cli/cli-test.c` | Interactive visualizer that dumps tables/groups and live-checks invariants |
 | `bin/` | Build output (gitignored); never edit or commit |
@@ -46,6 +47,13 @@ On macOS `gcc` is Apple clang; Docker covers real gcc.
   behavior; tables split past 1024 slots / 896 entries.
 - Cover the `NULL` argument → `SLATE_ERROR_INVALID` paths for new public functions.
 - End every test by freeing each map: `ATT_ASSERT_NE(slate_free(&map), SLATE_ERROR_INVALID, ...)`.
+  The test build routes allocations through a counting allocator, and the runner fails on any
+  allocation still alive at exit.
+- `tests/helpers.h` has the shared tools: `test_check(&map)` re-derives every invariant and returns
+  the number of violations (assert it is 0 after structural changes), `test_alloc_fail_at(n)`
+  injects an allocation failure, `test_fill_until_alias` builds a map with an aliased directory, and
+  `test_random` is a seeded generator. Use a fixed seed so failures reproduce.
+- Callbacks mark unused parameters with `(void)name;` so `make tidy` passes.
 - Code must also be valid C++: cast `void*` results explicitly, and pass integers as values via
   `(void*)(uintptr_t)n`.
 

@@ -39,8 +39,9 @@ slate_free(&map);
   clean, and runs on Linux, macOS, Windows, BSD and WebAssembly (Emscripten and WASI).
 - **Yours to configure.** Plug in a custom allocator, or make the whole library `static inline` with
   one macro.
-- **Tested.** 250+ assertions covering growth, splits, tombstones, compaction and cloning, run as both
-  C and C++.
+- **Tested.** 450 assertions covering growth, splits, tombstones, compaction and cloning, plus a
+  failure test for every allocation, leak checking and a 200,000-step randomized check against a
+  reference model, all run as both C and C++.
 
 ## Quick start
 
